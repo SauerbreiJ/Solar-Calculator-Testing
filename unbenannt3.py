@@ -1,5 +1,6 @@
 import math
 import datetime
+import re
 import pandas as pd
 import requests
 import streamlit as st
@@ -27,6 +28,21 @@ def berechne_solar_incidence_exakt(declination, hour_angle, slope_angle, surface
     cos_theta = max(-1.0, min(1.0, cos_theta))
 
     return math.degrees(math.acos(cos_theta))
+
+
+def _parse_uhrzeit(text):
+    """
+    Liest eine Uhrzeit wie '4:30', '04:30', '21:31' (auch '4.30' oder nur '4') ein.
+    Gibt (Stunde, Minute) zurück oder None, wenn das Format ungültig ist.
+    """
+    m = re.fullmatch(r"\s*(\d{1,2})(?:[:.](\d{2}))?\s*", text)
+    if not m:
+        return None
+    stunde = int(m.group(1))
+    minute = int(m.group(2)) if m.group(2) else 0
+    if stunde > 23 or minute > 59:
+        return None
+    return stunde, minute
 
 
 # --- Clear-Sky Radiation (Hottel + Liu & Jordan) ---
@@ -181,18 +197,20 @@ with tab2:
     st.subheader("⏰ Hour Angle Calculator")
     st.write("Calculate the hour angle from solar time (Solar Noon = 12:00 -> 0°).")
 
-    col_h1, col_h2 = st.columns(2)
-    with col_h1:
-        solar_hour = st.number_input("Solar Hour (0-23)", min_value=0, max_value=23, value=10, step=1)
-    with col_h2:
-        solar_minute = st.number_input("Solar Minute (0-59)", min_value=0, max_value=59, value=30, step=1)
+    solar_time_str = st.text_input("Solar Time (HH:MM)", value="10:30", key="ha_time",
+                                   help="24-hour format, e.g. 4:30 or 21:31")
+    zeit = _parse_uhrzeit(solar_time_str)
 
-    # Hour angle calculation: (Decimal Time - 12) * 15°
-    # (Morning hours are negative, afternoon hours are positive)
-    decimal_time = solar_hour + (solar_minute / 60.0)
-    calculated_hour_angle = (decimal_time - 12.0) * 15.0
+    if zeit is None:
+        st.error("Invalid time! Please use the format H:MM or HH:MM (00:00 – 23:59), e.g. 4:30 or 21:31.")
+    else:
+        solar_hour, solar_minute = zeit
+        # Hour angle calculation: (Decimal Time - 12) * 15°
+        # (Morning hours are negative, afternoon hours are positive)
+        decimal_time = solar_hour + (solar_minute / 60.0)
+        calculated_hour_angle = (decimal_time - 12.0) * 15.0
 
-    st.info(f"At **{solar_hour:02d}:{solar_minute:02d}** solar time, the Hour Angle is **{calculated_hour_angle:.2f}°**.")
+        st.info(f"At **{solar_hour:02d}:{solar_minute:02d}** solar time, the Hour Angle is **{calculated_hour_angle:.2f}°**.")
 
 # --- TAB 3: Clear-Sky Radiation for a whole day ---
 with tab3:
