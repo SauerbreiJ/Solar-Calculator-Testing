@@ -1,17 +1,9 @@
 import pandas as pd
-import requests
 import streamlit as st
 
 from solar.angles import zeit_label
 from solar.clear_sky import CLIMATES, berechne_clear_sky_tag
-from solar.geocoding import finde_ort, ort_label
-
-
-@st.cache_data(show_spinner=False)
-def suche_ort(name):
-    """Gecachte Ortssuche, damit derselbe Name nicht bei jedem Klick neu abgefragt wird."""
-    return finde_ort(name)
-
+from ui.location import location_input
 
 st.title("🌤️ Clear-Sky Radiation (Whole Day)")
 st.write(
@@ -20,25 +12,7 @@ st.write(
 )
 
 # Ortssuche liegt außerhalb des Formulars, damit die Trefferliste sofort erscheint
-cs_ort = st.text_input("Location", value="Madison", key="cs_ort",
-                       help="City name, e.g. Madison, Istanbul, Berlin")
-ort = None
-if len(cs_ort.strip()) >= 2:
-    try:
-        treffer = suche_ort(cs_ort.strip())
-    except requests.RequestException:
-        treffer = []
-        st.error("Location lookup failed (no internet connection?).")
-    else:
-        if not treffer:
-            st.warning("Location not found. Try only the city name.")
-    if treffer:
-        idx = st.selectbox("Select match", range(len(treffer)),
-                           format_func=lambda i: ort_label(treffer[i]),
-                           key=f"cs_treffer_{cs_ort.strip().lower()}")
-        ort = treffer[idx]
-        st.caption(f"📍 Latitude {ort['latitude']:.2f}° · "
-                   f"Elevation {ort.get('elevation') or 0:.0f} m")
+ort = location_input("cs")
 
 with st.form("clear_sky_form"):
     c1, c2 = st.columns(2)
