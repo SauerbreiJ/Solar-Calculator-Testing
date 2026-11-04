@@ -11,7 +11,7 @@ from solar.angles import (
     zeit_label,
 )
 
-GSC = 1367.0  # Solar constant [W/m2]
+from solar.extraterrestrial import GSC, extraterrestrial_normal  # noqa: F401 (re-exported)
 
 # Korrekturfaktoren (r0, r1, rk) für Hottels Koeffizienten je Klimazone
 CLIMATES = {
@@ -21,11 +21,6 @@ CLIMATES = {
     "Subarctic summer": (0.99, 0.99, 1.01),
     "Midlatitude winter": (1.03, 1.01, 1.00),
 }
-
-
-def extraterrestrial_normal(n):
-    """G_on: extraterrestrial radiation normal to the beam on day n [W/m2]."""
-    return GSC * (1 + 0.033 * math.cos(math.radians(360.0 * n / 365.0)))
 
 
 def hottel_coefficients(altitude_km, climate):
