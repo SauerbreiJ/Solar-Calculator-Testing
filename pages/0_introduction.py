@@ -188,13 +188,26 @@ with st.expander("8. Formulas"):
     st.caption("Clearness index: daily radiation divided by the daily extraterrestrial radiation.")
 
 # ---------------------------------------------------------------- 9
-with st.expander("9. Which angle do I need where?"):
+with st.expander("9. Which page do I need?"):
     st.markdown(
         """
-- **Incidence Angle calculator:** φ, δ, ω, β, γ → θ
-- **Day & Hour Angle page:** date → n, solar time → ω
-- **Clear-Sky Day:** location → φ and altitude, n → δ, then θz for every hour → τ_b, τ_d → G and I → H
+**The sidebar** holds the values every page shares: site (latitude, longitude, elevation, standard
+meridian), date (→ n and δ) and the surface (β, γ, ρg). Most pages also offer **📚 Load a lecture
+example**, which fills in the numbers of a slide example and shows the expected answer.
+
+| Page | Inputs → results |
+|---|---|
+| **Sun Position** | clock or solar time → solar time, ω, θz, αs, γs, ωs, N, sunrise/sunset, sun path |
+| **Incidence Angle** | φ, δ, ω, β, γ → θ (δ and ω can also be typed in directly) |
+| **Beam Ratio Rb** | instantaneous, hour-averaged (a/b) or solar-noon R_b |
+| **Extraterrestrial** | G_on, H_o (day), I_o (hour), monthly H̄_o, spectral split |
+| **Clear-Sky Day** | Hottel + Liu & Jordan → hourly and daily clear-sky radiation |
+| **Sunshine Hours → H̄** | Angström-Prescott: n̄/N̄ → H̄ for one month or the whole year |
+| **Beam/Diffuse Split** | Erbs hourly (k_T), daily (K_T) and monthly (K̄_T) |
+| **Daily → Hourly** | r_t (Collares-Pereira & Rabl) and r_d (Liu & Jordan) for every hour |
+| **Tilted Surface** | one hour: isotropic vs. HDKR, all components |
+| **Full Chain** | daily H → K_T → H_d → hourly → R_b → I_T for the whole day |
         """
     )
 
-st.caption("Sources: lecture slides ESE 5509 (Weeks 1–3) and Duffie & Beckman, *Solar Engineering of Thermal Processes*.")
+st.caption("Sources: lecture slides ESE 5509 (Weeks 1–5) and Duffie & Beckman, *Solar Engineering of Thermal Processes*.")

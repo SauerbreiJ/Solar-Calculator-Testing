@@ -3,48 +3,43 @@ import streamlit as st
 
 from solar.angles import zeit_label
 from solar.clear_sky import CLIMATES, berechne_clear_sky_tag
-from ui.location import location_input
+from ui.examples import example_picker
+from ui.site import get_site, site_summary
+from ui.widgets import COLORS, init
 
 st.title("🌤️ Clear-Sky Radiation (Whole Day)")
 st.write(
     "Hourly clear-sky radiation on a horizontal surface (Hottel beam + Liu & Jordan diffuse), "
     "summed from sunrise to sunset."
 )
+site = get_site()
+example_picker("clear")
+site_summary(site)
+st.caption(f"Elevation from the sidebar: {site['elev']:.0f} m")
 
-# Ortssuche liegt außerhalb des Formulars, damit die Trefferliste sofort erscheint
-ort = location_input("cs")
+init("cs_climate", "Midlatitude summer")
+st.selectbox("Climate type", list(CLIMATES.keys()), key="cs_climate")
 
-with st.form("clear_sky_form"):
-    c1, c2 = st.columns(2)
-    with c1:
-        cs_n = st.number_input("Day of the year n", min_value=1, max_value=365,
-                               value=234, step=1, key="cs_n",
-                               help="Aug 22 = 234. See the Day & Hour Angle page.")
-    with c2:
-        cs_climate = st.selectbox("Climate type", list(CLIMATES.keys()),
-                                  index=2, key="cs_climate")
-    cs_submitted = st.form_submit_button("Calculate Day")
+dec, sr, ss, rows, h_b, h_d = berechne_clear_sky_tag(site["lat"], site["elev"] / 1000.0, site["n"],
+                                                     st.session_state["cs_climate"])
+if site["dec_method"] != "Cooper":
+    st.caption("Note: this page always uses the Cooper declination.")
+if not rows:
+    st.warning("No sunrise on this day at this latitude (polar night).")
+    st.stop()
 
-if cs_submitted:
-    if ort is None:
-        st.error("Please enter a valid location first.")
-        st.stop()
-    cs_lat = ort["latitude"]
-    cs_alt = ort.get("elevation") or 0.0   # Höhe in m (0, falls nicht vorhanden)
-    dec, sr, ss, rows, h_b, h_d = berechne_clear_sky_tag(cs_lat, cs_alt / 1000.0, int(cs_n), cs_climate)
-    if not rows:
-        st.warning("No sunrise on this day at this latitude (polar night).")
-    else:
-        h_c = h_b + h_d
-        st.info(
-            f"Declination **{dec:.2f}°** · Sunrise **{zeit_label(sr)}** · "
-            f"Sunset **{zeit_label(ss)}** · Day length **{ss - sr:.2f} h** (solar time)"
-        )
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Beam H_cb", f"{h_b:.2f} MJ/m²")
-        m2.metric("Diffuse H_cd", f"{h_d:.2f} MJ/m²", f"{100 * h_d / h_c:.1f} % of total", delta_color="off")
-        m3.metric("Total H_c", f"{h_c:.2f} MJ/m²", f"{h_c / 3.6:.2f} kWh/m²", delta_color="off")
+h_c = h_b + h_d
+st.info(
+    f"Declination **{dec:.2f}°** · Sunrise **{zeit_label(sr)}** · "
+    f"Sunset **{zeit_label(ss)}** · Day length **{ss - sr:.2f} h** (solar time)"
+)
+m1, m2, m3 = st.columns(3)
+m1.metric("Beam H_cb", f"{h_b:.2f} MJ/m²")
+m2.metric("Diffuse H_cd", f"{h_d:.2f} MJ/m²", f"{100 * h_d / h_c:.1f} % of total", delta_color="off")
+m3.metric("Total H_c", f"{h_c:.2f} MJ/m²", f"{h_c / 3.6:.2f} kWh/m²", delta_color="off")
 
-        df = pd.DataFrame(rows)
-        st.dataframe(df, hide_index=True)
-        st.bar_chart(df.set_index("Time (solar)")[["I_cb (MJ/m²)", "I_cd (MJ/m²)"]])
+df = pd.DataFrame(rows)
+chart = df.set_index("Time (solar)")[["I_cb (MJ/m²)", "I_cd (MJ/m²)"]].rename(
+    columns={"I_cb (MJ/m²)": "Beam", "I_cd (MJ/m²)": "Diffuse"})
+st.bar_chart(chart, color=[COLORS["Beam"], COLORS["Diffuse"]], y_label="MJ/m² per hour")
+st.dataframe(df, hide_index=True)
